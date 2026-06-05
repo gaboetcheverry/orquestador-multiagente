@@ -186,54 +186,85 @@ def generar_word(data, filename="Reporte_Estrategico.docx"):
     return filename
 
 # ==============================================================================
-# 4. INTERFAZ DE USUARIO CON EFECTO "BACKGROUND LINES" CORREGIDO
+# 4. INTERFAZ CON AURORA BACKGROUND (ACETERNITY STYLE EN CSS PURO)
 # ==============================================================================
 def main():
-    # 🎨 INYECCIÓN DE CSS PARA IMITAR ACETERNITY UI BACKGROUND LINES (CON LEGIBILIDAD CORREGIDA)
+    # 🎨 INYECCIÓN DE CSS PARA AURORA BACKGROUND + ANIMACIONES DE ENTRADA
     st.markdown("""
     <style>
-        /* Fondo principal con líneas animadas sutiles */
+        /* Fondo base oscuro */
         .main .block-container {
-            background-color: #020617;
+            background-color: #050505;
             position: relative;
             z-index: 1;
         }
         
-        /* El efecto de líneas de fondo */
-        .aceternity-bg {
+        /* Contenedor de la Aurora */
+        .aurora-container {
             position: fixed;
             top: 0;
             left: 0;
             width: 100vw;
             height: 100vh;
             z-index: 0;
-            background-color: #020617;
-            background-image: 
-                linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
-            background-size: 60px 60px;
-            animation: moveLines 30s linear infinite;
+            background: #050505;
+            overflow: hidden;
             pointer-events: none;
         }
         
-        .aceternity-bg::after {
-            content: "";
+        /* Manchas de luz difuminadas (Aurora Blobs) */
+        .aurora-blob {
             position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: radial-gradient(circle at 50% 50%, rgba(37, 99, 235, 0.08) 0%, transparent 70%);
+            border-radius: 50%;
+            filter: blur(80px);
+            opacity: 0.5;
+            mix-blend-mode: screen;
+            animation: float 15s infinite ease-in-out alternate;
+        }
+        
+        .blob-1 { 
+            top: -10%; left: -10%; width: 60vw; height: 60vw; 
+            background: radial-gradient(circle, #4f46e5 0%, transparent 70%); 
+            animation-delay: 0s; 
+        }
+        .blob-2 { 
+            bottom: -10%; right: -10%; width: 70vw; height: 70vw; 
+            background: radial-gradient(circle, #06b6d4 0%, transparent 70%); 
+            animation-delay: -5s; 
+        }
+        .blob-3 { 
+            top: 30%; left: 30%; width: 50vw; height: 50vw; 
+            background: radial-gradient(circle, #ec4899 0%, transparent 70%); 
+            animation-delay: -10s; 
         }
 
-        @keyframes moveLines {
-            0% { background-position: 0 0; }
-            100% { background-position: 60px 60px; }
+        @keyframes float {
+            0% { transform: translate(0, 0) scale(1); }
+            50% { transform: translate(40px, 60px) scale(1.15); }
+            100% { transform: translate(-30px, -40px) scale(0.9); }
+        }
+
+        /* Animación de entrada suave (imitando Framer Motion) */
+        .fade-in-up {
+            animation: fadeInUp 0.8s ease-out forwards;
+            opacity: 0;
+            transform: translateY(30px);
+        }
+        
+        .fade-in-up-delay-1 { animation-delay: 0.1s; }
+        .fade-in-up-delay-2 { animation-delay: 0.3s; }
+        .fade-in-up-delay-3 { animation-delay: 0.5s; }
+
+        @keyframes fadeInUp {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
         /* Texto con degradado */
         .gradient-text {
-            background: linear-gradient(to bottom, #f8fafc 0%, #94a3b8 100%);
+            background: linear-gradient(to bottom, #ffffff 0%, #94a3b8 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
@@ -246,55 +277,57 @@ def main():
         .subtitle-text {
             color: #cbd5e1 !important;
             font-size: 1.1rem;
+            font-weight: 300;
             max-width: 600px;
             margin: 0 auto;
             line-height: 1.6;
         }
 
-        /* CORRECCIÓN: Forzar color de texto claro en TODA la app para máxima legibilidad */
+        /* Forzar color de texto claro en TODA la app para máxima legibilidad */
         .main p, .main h1, .main h2, .main h3, .main h4, .main label, .main span, .main div, .main a {
             color: #e2e8f0 !important;
         }
         
         /* Sidebar oscura y elegante */
         section[data-testid="stSidebar"] {
-            background-color: #0f172a !important;
+            background-color: #0a0a0a !important;
             border-right: 1px solid #1e293b;
         }
         section[data-testid="stSidebar"] * {
             color: #e2e8f0 !important;
         }
 
-        /* Glassmorphism SOLO para contenedores de archivos y alertas (NO para texto general) */
+        /* Glassmorphism para contenedores de archivos y alertas */
         .stFileUploader > div, .stAlert {
-            background: rgba(15, 23, 42, 0.5) !important;
-            backdrop-filter: blur(8px);
+            background: rgba(15, 23, 42, 0.4) !important;
+            backdrop-filter: blur(12px);
             border: 1px solid rgba(255, 255, 255, 0.1) !important;
             border-radius: 12px !important;
         }
 
-        /* Botón principal */
+        /* Botón principal estilo "Debug now" pero corporativo */
         .stButton>button {
-            background: linear-gradient(90deg, #1e40af 0%, #2563eb 100%) !important;
-            color: white !important;
+            background: #ffffff !important;
+            color: #050505 !important;
             font-weight: 600;
             border: none;
-            border-radius: 8px;
-            padding: 0.75rem 1.5rem;
+            border-radius: 9999px; /* rounded-full */
+            padding: 0.75rem 2rem;
             transition: all 0.3s ease;
-            box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.3);
+            box-shadow: 0 4px 6px -1px rgba(255, 255, 255, 0.1);
         }
         .stButton>button:hover {
-            background: linear-gradient(90deg, #1e3a8a 0%, #1d4ed8 100%) !important;
-            box-shadow: 0 10px 15px -3px rgba(37, 99, 235, 0.4);
-            transform: translateY(-1px);
+            background: #e2e8f0 !important;
+            box-shadow: 0 10px 15px -3px rgba(255, 255, 255, 0.2);
+            transform: translateY(-2px);
         }
 
-        /* Inputs y Text Areas con buen contraste */
+        /* Inputs y Text Areas */
         .stTextInput>div>div>input, .stTextArea>div>div>textarea {
-            background-color: rgba(15, 23, 42, 0.8) !important;
+            background-color: rgba(15, 23, 42, 0.6) !important;
             color: #f8fafc !important;
             border: 1px solid #334155 !important;
+            border-radius: 8px !important;
         }
         
         /* Ocultar elementos por defecto */
@@ -303,17 +336,21 @@ def main():
         .viewerBadge_container__1QSob {display: none;}
     </style>
     
-    <!-- Contenedor del fondo animado -->
-    <div class="aceternity-bg"></div>
+    <!-- Contenedor del Aurora Background -->
+    <div class="aurora-container">
+        <div class="aurora-blob blob-1"></div>
+        <div class="aurora-blob blob-2"></div>
+        <div class="aurora-blob blob-3"></div>
+    </div>
     """, unsafe_allow_html=True)
 
-    # 🌟 HERO SECTION
+    # 🌟 HERO SECTION CON ANIMACIÓN DE ENTRADA (Fade In Up)
     st.markdown("""
-    <div style="text-align: center; padding: 2rem 1rem 3rem 1rem; position: relative; z-index: 2;">
-        <h1 class="gradient-text" style="font-size: 2.5rem; margin-bottom: 1rem;">
+    <div class="fade-in-up" style="text-align: center; padding: 3rem 1rem 2rem 1rem; position: relative; z-index: 2;">
+        <h1 class="gradient-text" style="font-size: 3rem; margin-bottom: 1rem;">
             Orquestador Estratégico <br /> Multiagente PRO
         </h1>
-        <p class="subtitle-text">
+        <p class="subtitle-text fade-in-up fade-in-up-delay-1">
             Obtén el mejor asesoramiento de nuestros 11 agentes expertos, 
             auditoría crítica y consenso ejecutivo, totalmente automatizado.
         </p>
@@ -326,7 +363,7 @@ def main():
         st.markdown("---")
         st.info("Arquitectura Activa:\n1. Refinador de Consultas\n2. 11 Agentes de Dominio\n3. Auditor Crítico\n4. Motor de Consenso", icon="ℹ️")
 
-    st.markdown('<div style="position: relative; z-index: 2;">', unsafe_allow_html=True)
+    st.markdown('<div class="fade-in-up fade-in-up-delay-2" style="position: relative; z-index: 2; padding: 0 1rem;">', unsafe_allow_html=True)
     
     tema = st.text_area("🎯 Describe el proyecto, empresa o desafío a analizar:", 
                         placeholder="Ej: Evaluar la viabilidad de expandir nuestra planta de manufactura a Vietnam en 2025...", height=100)
