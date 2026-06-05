@@ -2,9 +2,12 @@ import streamlit as st
 import os
 from datetime import datetime
 from docx import Document
-from pptx import Presentation
 import plotly.express as px
 import pandas as pd
+import PyPDF2
+import base64
+from PIL import Image
+import io
 
 # Importaciones para PDF Profesional
 from reportlab.lib.pagesizes import A4
@@ -17,10 +20,73 @@ from reportlab.lib.colors import HexColor
 from langchain_openai import ChatOpenAI
 from langchain_core.prompts import PromptTemplate
 
-st.set_page_config(page_title="Orquestador Estratégico Multiagente Pro", layout="wide")
+st.set_page_config(page_title="Orquestador Estratégico Multiagente PRO", layout="wide")
 
 # ==============================================================================
-# 1. CONFIGURACIÓN DE AGENTES Y PROMPTS ROBUSTOS
+# 1. FUNCIONES DE EXTRACCIÓN DE ARCHIVOS
+# ==============================================================================
+def extraer_texto_csv_excel(archivo):
+    """Extrae datos de CSV o Excel y los convierte en texto estructurado."""
+    try:
+        if archivo.name.endswith('.csv'):
+            df = pd.read_csv(archivo)
+        else:  # Excel
+            df = pd.read_excel(archivo)
+        
+        texto = f"📊 DATOS DEL ARCHIVO: {archivo.name}\n"
+        texto += f"Filas: {len(df)}, Columnas: {len(df.columns)}\n\n"
+        texto += "COLUMNAS:\n" + ", ".join(df.columns.tolist()) + "\n\n"
+        texto += "PRIMERAS 10 FILAS:\n"
+        texto += df.head(10).to_string(index=False)
+        return texto
+    except Exception as e:
+        return f"Error al leer {archivo.name}: {str(e)}"
+
+def extraer_texto_pdf(archivo):
+    """Extrae texto de un archivo PDF."""
+    try:
+        pdf_reader = PyPDF2.PdfReader(archivo)
+        texto = f"📄 CONTENIDO DEL PDF: {archivo.name}\n"
+        texto += f"Páginas: {len(pdf_reader.pages)}\n\n"
+        
+        for i, page in enumerate(pdf_reader.pages[:10]):
+            texto += f"--- Página {i+1} ---\n"
+            texto += page.extract_text() + "\n\n"
+        
+        if len(pdf_reader.pages) > 10:
+            texto += f"\n[... {len(pdf_reader.pages) - 10} páginas adicionales omitidas para optimizar el análisis ...]"
+        
+        return texto
+    except Exception as e:
+        return f"Error al leer {archivo.name}: {str(e)}"
+
+def extraer_texto_word(archivo):
+    """Extrae texto de un archivo Word."""
+    try:
+        doc = Document(archivo)
+        texto = f"📝 CONTENIDO DEL WORD: {archivo.name}\n\n"
+        
+        for para in doc.paragraphs:
+            if para.text.strip():
+                texto += para.text + "\n"
+        
+        return texto
+    except Exception as e:
+        return f"Error al leer {archivo.name}: {str(e)}"
+
+def procesar_imagen(archivo):
+    """Convierte imagen a base64 para análisis multimodal."""
+    try:
+        imagen = Image.open(archivo)
+        buffered = io.BytesIO()
+        imagen.save(buffered, format="JPEG")
+        img_base64 = base64.b64encode(buffered.getvalue()).decode()
+        return img_base64
+    except Exception as e:
+        return None
+
+# ==============================================================================
+# 2. CONFIGURACIÓN DE AGENTES Y PROMPTS ROBUSTOS
 # ==============================================================================
 AGENTES_DOMINIO = [
     "Agente Financiero (ROI, CAPEX, OPEX, Flujo de Caja)",
@@ -36,11 +102,9 @@ AGENTES_DOMINIO = [
     "Agente Probabilístico (Análisis Bayesiano, Montecarlo)"
 ]
 
-def ejecutar_cadena_multiagente(tema_crudo: str, api_key: str):
+def ejecutar_cadena_multiagente(tema_crudo: str, api_key: str, archivos_texto: str, imagen_base64: str = None):
     """Ejecuta la orquestación real usando LLM para cada etapa."""
     os.environ["OPENAI_API_KEY"] = api_key
-    # Usamos gpt-4o-mini por ser más rápido y económico, pero igual de robusto para este tipo de tareas. 
-    # Si prefieres el completo, cambia a "gpt-4o"
     llm = ChatOpenAI(model="gpt-4o-mini", temperature=0.3)
     
     progress_bar = st.progress(0.0)
@@ -48,7 +112,6 @@ def ejecutar_cadena_multiagente(tema_crudo: str, api_key: str):
     
     resultados = {"tema_original": tema_crudo, "fecha": datetime.now().strftime("%d de %B de %Y")}
     
-    # Total de pasos para la barra de progreso (1 briefing + 11 agentes + 1 auditor + 1 consenso = 14)
     total_steps = 14
     current_step = 0
 
@@ -57,11 +120,14 @@ def ejecutar_cadena_multiagente(tema_crudo: str, api_key: str):
     status_text.text("🧹 Agente de Limpieza: Estructurando el briefing estratégico...")
     progress_bar.progress(current_step / total_steps)
     
+    contexto_archivos = f"\n\nINFORMACIÓN ADICIONAL DE ARCHIVOS ADJUNTOS:\n{archivos_texto}" if archivos_texto else ""
+    
     prompt_refinar = PromptTemplate.from_template(
-        "Eres un Consultor Estratégico Senior. El usuario dio esta consulta cruda: '{tema}'. "
-        "Reescríbela como un 'Briefing Estratégico Ejecutivo' formal, detallando: Objetivo Central, Alcance, Restricciones Asumidas y KPIs de Éxito. Sé conciso pero muy profesional."
+        "Eres un Consultor Estratégico Senior. El usuario dio esta consulta cruda: '{tema}'{archivos}\n\n"
+        "Reescríbela como un 'Briefing Estratégico Ejecutivo' formal, detallando: Objetivo Central, Alcance, Restricciones Asumidas y KPIs de Éxito. "
+        "Si hay datos de archivos, incorpóralos de manera relevante. Sé conciso pero muy profesional."
     )
-    briefing = llm.invoke(prompt_refinar.format(tema=tema_crudo)).content
+    briefing = llm.invoke(prompt_refinar.format(tema=tema_crudo, archivos=contexto_archivos)).content
     resultados["briefing"] = briefing
 
     # PASO 2: Análisis de los 11 Agentes Especializados
@@ -95,7 +161,7 @@ def ejecutar_cadena_multiagente(tema_crudo: str, api_key: str):
     # PASO 4: Motor de Consenso
     current_step += 1
     status_text.text("🤝 Motor de Consenso: Sintetizando la estrategia final...")
-    progress_bar.progress(current_step / total_steps) # Esto ahora es exactamente 1.0 (14/14)
+    progress_bar.progress(current_step / total_steps)
     
     prompt_consenso = PromptTemplate.from_template(
         "Eres el CEO y Motor de Consenso. Basado en el Briefing: '{briefing}', los 11 análisis y la Auditoría Crítica: '{auditoria}', "
@@ -111,36 +177,31 @@ def ejecutar_cadena_multiagente(tema_crudo: str, api_key: str):
     return resultados
 
 # ==============================================================================
-# 2. GENERADOR DE PDF PROFESIONAL (PLATYPUS)
+# 3. GENERADOR DE PDF PROFESIONAL (PLATYPUS)
 # ==============================================================================
 def generar_pdf_profesional(data, filename="Reporte_Estrategico_Pro.pdf"):
     doc = SimpleDocTemplate(filename, pagesize=A4, rightMargin=50, leftMargin=50, topMargin=50, bottomMargin=50)
     story = []
     styles = getSampleStyleSheet()
     
-    # Estilos personalizados
     styles.add(ParagraphStyle(name='TituloPrincipal', fontName='Helvetica-Bold', fontSize=22, textColor=HexColor('#1f3a93'), alignment=TA_CENTER, spaceAfter=30))
     styles.add(ParagraphStyle(name='Subtitulo', fontName='Helvetica-Bold', fontSize=14, textColor=HexColor('#1f3a93'), spaceBefore=20, spaceAfter=10))
     styles.add(ParagraphStyle(name='Cuerpo', fontName='Helvetica', fontSize=11, leading=16, alignment=TA_JUSTIFY, spaceAfter=12))
     styles.add(ParagraphStyle(name='CajaResumen', fontName='Helvetica', fontSize=11, leading=16, backColor=HexColor('#f0f4f8'), borderColor=HexColor('#1f3a93'), borderWidth=1, borderPadding=10, spaceAfter=20))
 
-    # Portada / Encabezado
     story.append(Paragraph("REPORTE ESTRATÉGICO MULTIAGENTE", styles['TituloPrincipal']))
     story.append(Paragraph(f"Tema: {data['tema_original']}", styles['Subtitulo']))
     story.append(Paragraph(f"Fecha de Emisión: {data['fecha']}", styles['Cuerpo']))
     story.append(Spacer(1, 30))
 
-    # Consenso (Lo más importante primero)
     story.append(Paragraph("1. CONSENSO ESTRATÉGICO Y HOJA DE RUTA", styles['Subtitulo']))
     story.append(Paragraph(data['consenso'].replace('\n', '<br/>'), styles['CajaResumen']))
     story.append(PageBreak())
 
-    # Auditoría
     story.append(Paragraph("2. DICTAMEN DEL AUDITOR CRÍTICO", styles['Subtitulo']))
     story.append(Paragraph(data['auditoria'].replace('\n', '<br/>'), styles['Cuerpo']))
     story.append(Spacer(1, 20))
 
-    # Análisis por Dominio
     story.append(PageBreak())
     story.append(Paragraph("3. ANÁLISIS DETALLADO POR DOMINIO DE EXPERTOS", styles['Subtitulo']))
     
@@ -154,7 +215,7 @@ def generar_pdf_profesional(data, filename="Reporte_Estrategico_Pro.pdf"):
     return filename
 
 # ==============================================================================
-# 3. GENERADORES WORD Y PPTX
+# 4. GENERADOR WORD
 # ==============================================================================
 def generar_word(data, filename="Reporte_Estrategico.docx"):
     doc = Document()
@@ -170,23 +231,8 @@ def generar_word(data, filename="Reporte_Estrategico.docx"):
     doc.save(filename)
     return filename
 
-def generar_pptx(data, filename="Presentacion_Estrategica.pptx"):
-    prs = Presentation()
-    slide = prs.slides.add_slide(prs.slide_layouts[0])
-    slide.shapes.title.text = f"Estrategia: {data['tema_original']}"
-    
-    slide = prs.slides.add_slide(prs.slide_layouts[1])
-    slide.shapes.title.text = "Consenso del Motor Estratégico"
-    slide.placeholders[1].text = data['consenso'][:1000] + "..."
-    
-    slide = prs.slides.add_slide(prs.slide_layouts[1])
-    slide.shapes.title.text = "Hallazgos del Auditor Crítico"
-    slide.placeholders[1].text = data['auditoria'][:1000] + "..."
-    prs.save(filename)
-    return filename
-
 # ==============================================================================
-# 4. INTERFAZ DE USUARIO (STREAMLIT)
+# 5. INTERFAZ DE USUARIO (STREAMLIT)
 # ==============================================================================
 def main():
     st.title("🏢 Orquestador Estratégico Multiagente PRO")
@@ -202,6 +248,20 @@ def main():
     tema = st.text_area("Describe el proyecto, empresa o desafío a analizar:", 
                         placeholder="Ej: Evaluar la viabilidad de expandir nuestra planta de manufactura a Vietnam en 2025, considerando riesgos geopolíticos, costos laborales y cumplimiento ESG.", height=100)
     
+    # Carga de archivos
+    st.markdown("### 📎 Adjuntar Archivos de Soporte (Opcional)")
+    st.caption("Sube documentos, datos o imágenes que quieras que los agentes analicen junto con tu consulta.")
+    
+    archivos_subidos = st.file_uploader(
+        "Arrastra archivos aquí o haz clic para seleccionar",
+        type=['csv', 'xlsx', 'xls', 'pdf', 'docx', 'jpg', 'jpeg', 'png'],
+        accept_multiple_files=True,
+        help="Formatos soportados: CSV, Excel, PDF, Word, Imágenes (JPG, PNG)"
+    )
+    
+    if archivos_subidos:
+        st.success(f"✅ {len(archivos_subidos)} archivo(s) listo(s) para análisis")
+    
     if st.button("🚀 INICIAR ORQUESTACIÓN MULTIAGENTE", type="primary", use_container_width=True):
         if not tema:
             st.warning("Por favor, ingrese un tema para analizar.")
@@ -212,7 +272,24 @@ def main():
             
         with st.spinner("Procesando cadena multiagente... (Esto toma 1-2 minutos)"):
             try:
-                resultados = ejecutar_cadena_multiagente(tema, api_key)
+                # Procesar archivos adjuntos
+                archivos_texto = ""
+                imagen_base64 = None
+                
+                if archivos_subidos:
+                    for archivo in archivos_subidos:
+                        if archivo.name.endswith(('.csv', '.xlsx', '.xls')):
+                            archivos_texto += extraer_texto_csv_excel(archivo) + "\n\n"
+                        elif archivo.name.endswith('.pdf'):
+                            archivos_texto += extraer_texto_pdf(archivo) + "\n\n"
+                        elif archivo.name.endswith('.docx'):
+                            archivos_texto += extraer_texto_word(archivo) + "\n\n"
+                        elif archivo.name.endswith(('.jpg', '.jpeg', '.png')):
+                            imagen_base64 = procesar_imagen(archivo)
+                            if imagen_base64:
+                                archivos_texto += f"🖼️ IMAGEN ADJUNTA: {archivo.name} (Análisis visual disponible)\n\n"
+                
+                resultados = ejecutar_cadena_multiagente(tema, api_key, archivos_texto, imagen_base64)
                 st.session_state['resultados'] = resultados
                 st.success("✅ Análisis multiagente completado exitosamente.")
             except Exception as e:
@@ -239,11 +316,10 @@ def main():
         st.markdown("---")
         st.subheader("📥 Centro de Descarga de Reportes Profesionales")
         
-        colA, colB, colC = st.columns(3)
+        colA, colB = st.columns(2)
         
         pdf_file = generar_pdf_profesional(data)
         word_file = generar_word(data)
-        pptx_file = generar_pptx(data)
         
         with colA:
             with open(pdf_file, "rb") as f:
@@ -251,9 +327,6 @@ def main():
         with colB:
             with open(word_file, "rb") as f:
                 st.download_button(label="📝 Descargar Word", data=f, file_name=word_file, mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document", use_container_width=True)
-        with colC:
-            with open(pptx_file, "rb") as f:
-                st.download_button(label="📊 Descargar PowerPoint", data=f, file_name=pptx_file, mime="application/vnd.openxmlformats-officedocument.presentationml.presentation", use_container_width=True)
 
 if __name__ == "__main__":
     main()
