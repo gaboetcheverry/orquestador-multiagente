@@ -2,7 +2,6 @@ import streamlit as st
 import os
 from datetime import datetime
 from docx import Document
-import plotly.express as px
 import pandas as pd
 import PyPDF2
 import base64
@@ -23,7 +22,7 @@ from langchain_core.prompts import PromptTemplate
 st.set_page_config(page_title="Orquestador Estratégico Multiagente PRO", layout="wide", page_icon="🏢")
 
 # ==============================================================================
-# 1. FUNCIONES DE EXTRACCIÓN DE ARCHIVOS
+# 1. FUNCIONES DE EXTRACCIÓN DE ARCHIVOS (Sin cambios)
 # ==============================================================================
 def extraer_texto_csv_excel(archivo):
     try:
@@ -72,7 +71,7 @@ def procesar_imagen(archivo):
         return None
 
 # ==============================================================================
-# 2. CONFIGURACIÓN DE AGENTES Y PROMPTS
+# 2. CONFIGURACIÓN DE AGENTES Y PROMPTS (Sin cambios)
 # ==============================================================================
 AGENTES_DOMINIO = [
     "Agente Financiero (ROI, CAPEX, OPEX, Flujo de Caja)",
@@ -142,7 +141,7 @@ def ejecutar_cadena_multiagente(tema_crudo: str, api_key: str, archivos_texto: s
     return resultados
 
 # ==============================================================================
-# 3. GENERADORES DE REPORTES
+# 3. GENERADORES DE REPORTES (Sin cambios)
 # ==============================================================================
 def generar_pdf_profesional(data, filename="Reporte_Estrategico_Pro.pdf"):
     doc = SimpleDocTemplate(filename, pagesize=A4, rightMargin=50, leftMargin=50, topMargin=50, bottomMargin=50)
@@ -187,32 +186,89 @@ def generar_word(data, filename="Reporte_Estrategico.docx"):
     return filename
 
 # ==============================================================================
-# 4. INTERFAZ DE USUARIO CON CSS PROFESIONAL
+# 4. INTERFAZ DE USUARIO CON EFECTO "BACKGROUND LINES" (ACETERNITY STYLE)
 # ==============================================================================
 def main():
-    # 🎨 INYECCIÓN DE CSS PROFESIONAL
+    # 🎨 INYECCIÓN DE CSS PARA IMITAR ACETERNITY UI BACKGROUND LINES
     st.markdown("""
     <style>
-        /* Fondo principal limpio */
+        /* Fondo principal con líneas animadas sutiles */
         .main .block-container {
-            background-color: #f8fafc;
-            padding-top: 3rem;
+            background-color: #020617; /* Slate 950 */
+            position: relative;
+            z-index: 1;
         }
+        
+        /* El efecto de líneas de fondo */
+        .aceternity-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 0;
+            background-color: #020617;
+            background-image: 
+                linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+            background-size: 60px 60px;
+            animation: moveLines 30s linear infinite;
+            pointer-events: none;
+        }
+        
+        /* Gradiente radial para dar profundidad en el centro */
+        .aceternity-bg::after {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle at 50% 50%, rgba(37, 99, 235, 0.08) 0%, transparent 70%);
+        }
+
+        @keyframes moveLines {
+            0% { background-position: 0 0; }
+            100% { background-position: 60px 60px; }
+        }
+
+        /* Texto con degradado (bg-clip-text) */
+        .gradient-text {
+            background: linear-gradient(to bottom, #e2e8f0 0%, #94a3b8 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            color: transparent;
+            font-weight: 800;
+            letter-spacing: -0.02em;
+            line-height: 1.1;
+        }
+
+        .subtitle-text {
+            color: #94a3b8;
+            font-size: 1.1rem;
+            max-width: 600px;
+            margin: 0 auto;
+            line-height: 1.6;
+        }
+
         /* Sidebar oscura y elegante */
         section[data-testid="stSidebar"] {
             background-color: #0f172a !important;
             border-right: 1px solid #1e293b;
         }
-        section[data-testid="stSidebar"] h1, section[data-testid="stSidebar"] h2, section[data-testid="stSidebar"] h3,
-        section[data-testid="stSidebar"] p, section[data-testid="stSidebar"] label, section[data-testid="stSidebar"] div {
+        section[data-testid="stSidebar"] * {
             color: #e2e8f0 !important;
         }
-        /* Títulos principales */
-        h1, h2, h3 {
-            color: #0f172a !important;
-            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
-            font-weight: 700;
+
+        /* Tarjetas de contenido con efecto Glassmorphism */
+        .stMarkdown, .stAlert, .stFileUploader > div {
+            background: rgba(15, 23, 42, 0.6) !important;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.08) !important;
+            border-radius: 12px !important;
         }
+
         /* Botón principal con degradado corporativo */
         .stButton>button {
             background: linear-gradient(90deg, #1e40af 0%, #2563eb 100%) !important;
@@ -222,50 +278,55 @@ def main():
             border-radius: 8px;
             padding: 0.75rem 1.5rem;
             transition: all 0.3s ease;
-            box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.2);
+            box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.3);
         }
         .stButton>button:hover {
             background: linear-gradient(90deg, #1e3a8a 0%, #1d4ed8 100%) !important;
-            box-shadow: 0 10px 15px -3px rgba(37, 99, 235, 0.3);
+            box-shadow: 0 10px 15px -3px rgba(37, 99, 235, 0.4);
             transform: translateY(-1px);
         }
-        /* Cajas de alerta elegantes */
-        .stAlert {
-            border-radius: 8px;
-            border-left: 4px solid #2563eb;
-            background-color: #eff6ff !important;
-            color: #1e3a8a !important;
+
+        /* Inputs y Text Areas */
+        .stTextInput>div>div>input, .stTextArea>div>div>textarea {
+            background-color: rgba(15, 23, 42, 0.8) !important;
+            color: #e2e8f0 !important;
+            border: 1px solid #334155 !important;
         }
-        /* File uploader estilizado */
-        .stFileUploader {
-            border: 2px dashed #cbd5e1;
-            border-radius: 8px;
-            background-color: #ffffff;
-            padding: 1rem;
-            transition: border-color 0.3s;
-        }
-        .stFileUploader:hover {
-            border-color: #2563eb;
-        }
-        /* Ocultar footer y badges de Streamlit para look 100% blanco */
+        
+        /* Ocultar elementos por defecto de Streamlit */
         #MainMenu {visibility: hidden;}
         footer {visibility: hidden;}
         .viewerBadge_container__1QSob {display: none;}
     </style>
+    
+    <!-- Contenedor del fondo animado -->
+    <div class="aceternity-bg"></div>
     """, unsafe_allow_html=True)
 
-    st.title("🏢 Orquestador Estratégico Multiagente PRO")
-    st.markdown("Sistema de inteligencia colectiva con **Agente de Limpieza**, 11 Especialistas, Auditoría Crítica y Motor de Consenso.")
-    
+    # 🌟 HERO SECTION (Imitando tu código React)
+    st.markdown("""
+    <div style="text-align: center; padding: 2rem 1rem 3rem 1rem; position: relative; z-index: 2;">
+        <h1 class="gradient-text" style="font-size: 2.5rem; margin-bottom: 1rem;">
+            Orquestador Estratégico <br /> Multiagente PRO
+        </h1>
+        <p class="subtitle-text">
+            Obtén el mejor asesoramiento de nuestros 11 agentes expertos, 
+            auditoría crítica y consenso ejecutivo, totalmente automatizado.
+        </p>
+    </div>
+    """, unsafe_allow_html=True)
+
     with st.sidebar:
         st.markdown("### ⚙️ Configuración")
         api_key = st.text_input("🔑 OpenAI API Key", type="password", value=os.getenv("OPENAI_API_KEY", ""))
         st.markdown("---")
         st.info("Arquitectura Activa:\n1. Refinador de Consultas\n2. 11 Agentes de Dominio\n3. Auditor Crítico\n4. Motor de Consenso", icon="ℹ️")
 
-    st.markdown("### 🎯 Definir Objetivo Estratégico")
-    tema = st.text_area("Describe el proyecto, empresa o desafío a analizar:", 
-                        placeholder="Ej: Evaluar la viabilidad de expandir nuestra planta de manufactura a Vietnam en 2025, considerando riesgos geopolíticos, costos laborales y cumplimiento ESG.", height=100)
+    # Contenedor principal con fondo transparente para dejar ver las líneas
+    st.markdown('<div style="position: relative; z-index: 2;">', unsafe_allow_html=True)
+    
+    tema = st.text_area("🎯 Describe el proyecto, empresa o desafío a analizar:", 
+                        placeholder="Ej: Evaluar la viabilidad de expandir nuestra planta de manufactura a Vietnam en 2025...", height=100)
     
     st.markdown("### 📎 Adjuntar Archivos de Soporte (Opcional)")
     st.caption("Sube documentos, datos o imágenes que quieras que los agentes analicen junto con tu consulta.")
@@ -285,7 +346,7 @@ def main():
             st.warning("Por favor, ingrese un tema para analizar.", icon="⚠️")
             return
         if not api_key:
-            st.error("⚠️ Es obligatorio proporcionar una OpenAI API Key válida para el análisis robusto.", icon="🚫")
+            st.error("⚠️ Es obligatorio proporcionar una OpenAI API Key válida.", icon="🚫")
             return
             
         with st.spinner("Procesando cadena multiagente... (Esto toma 1-2 minutos)"):
@@ -319,13 +380,13 @@ def main():
         
         col1, col2 = st.columns([2, 1])
         with col1:
-            st.markdown("#### 🎯 Estrategia Unificada (Motor de Consenso)")
+            st.markdown("#### 🎯 Estrategia Unificada")
             st.info(data['consenso'], icon="💡")
         with col2:
             st.markdown("#### ⚖️ Veredicto del Auditor")
             st.warning(data['auditoria'][:400] + "...", icon="🔍")
             
-        st.markdown("#### 🧠 Briefing Estratégico (Generado por Agente de Limpieza)")
+        st.markdown("#### 🧠 Briefing Estratégico")
         st.markdown(f"*{data['briefing']}*")
 
         st.markdown("---")
@@ -341,6 +402,8 @@ def main():
         with colB:
             with open(word_file, "rb") as f:
                 st.download_button(label="📝 Descargar Word", data=f, file_name=word_file, mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document", use_container_width=True)
+    
+    st.markdown('</div>', unsafe_allow_html=True)
 
 if __name__ == "__main__":
     main()
