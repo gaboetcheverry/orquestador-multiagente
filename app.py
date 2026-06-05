@@ -22,7 +22,7 @@ from langchain_core.prompts import PromptTemplate
 st.set_page_config(page_title="Orquestador Estratégico Multiagente PRO", layout="wide", page_icon="🏢")
 
 # ==============================================================================
-# 1. FUNCIONES DE EXTRACCIÓN DE ARCHIVOS (Sin cambios)
+# 1. FUNCIONES DE EXTRACCIÓN DE ARCHIVOS
 # ==============================================================================
 def extraer_texto_csv_excel(archivo):
     try:
@@ -71,7 +71,7 @@ def procesar_imagen(archivo):
         return None
 
 # ==============================================================================
-# 2. CONFIGURACIÓN DE AGENTES Y PROMPTS (Sin cambios)
+# 2. CONFIGURACIÓN DE AGENTES Y PROMPTS
 # ==============================================================================
 AGENTES_DOMINIO = [
     "Agente Financiero (ROI, CAPEX, OPEX, Flujo de Caja)",
@@ -141,7 +141,7 @@ def ejecutar_cadena_multiagente(tema_crudo: str, api_key: str, archivos_texto: s
     return resultados
 
 # ==============================================================================
-# 3. GENERADORES DE REPORTES (Sin cambios)
+# 3. GENERADORES DE REPORTES
 # ==============================================================================
 def generar_pdf_profesional(data, filename="Reporte_Estrategico_Pro.pdf"):
     doc = SimpleDocTemplate(filename, pagesize=A4, rightMargin=50, leftMargin=50, topMargin=50, bottomMargin=50)
@@ -186,15 +186,15 @@ def generar_word(data, filename="Reporte_Estrategico.docx"):
     return filename
 
 # ==============================================================================
-# 4. INTERFAZ DE USUARIO CON EFECTO "BACKGROUND LINES" (ACETERNITY STYLE)
+# 4. INTERFAZ DE USUARIO CON EFECTO "BACKGROUND LINES" CORREGIDO
 # ==============================================================================
 def main():
-    # 🎨 INYECCIÓN DE CSS PARA IMITAR ACETERNITY UI BACKGROUND LINES
+    # 🎨 INYECCIÓN DE CSS PARA IMITAR ACETERNITY UI BACKGROUND LINES (CON LEGIBILIDAD CORREGIDA)
     st.markdown("""
     <style>
         /* Fondo principal con líneas animadas sutiles */
         .main .block-container {
-            background-color: #020617; /* Slate 950 */
+            background-color: #020617;
             position: relative;
             z-index: 1;
         }
@@ -216,7 +216,6 @@ def main():
             pointer-events: none;
         }
         
-        /* Gradiente radial para dar profundidad en el centro */
         .aceternity-bg::after {
             content: "";
             position: absolute;
@@ -232,9 +231,9 @@ def main():
             100% { background-position: 60px 60px; }
         }
 
-        /* Texto con degradado (bg-clip-text) */
+        /* Texto con degradado */
         .gradient-text {
-            background: linear-gradient(to bottom, #e2e8f0 0%, #94a3b8 100%);
+            background: linear-gradient(to bottom, #f8fafc 0%, #94a3b8 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
@@ -245,13 +244,18 @@ def main():
         }
 
         .subtitle-text {
-            color: #94a3b8;
+            color: #cbd5e1 !important;
             font-size: 1.1rem;
             max-width: 600px;
             margin: 0 auto;
             line-height: 1.6;
         }
 
+        /* CORRECCIÓN: Forzar color de texto claro en TODA la app para máxima legibilidad */
+        .main p, .main h1, .main h2, .main h3, .main h4, .main label, .main span, .main div, .main a {
+            color: #e2e8f0 !important;
+        }
+        
         /* Sidebar oscura y elegante */
         section[data-testid="stSidebar"] {
             background-color: #0f172a !important;
@@ -261,15 +265,15 @@ def main():
             color: #e2e8f0 !important;
         }
 
-        /* Tarjetas de contenido con efecto Glassmorphism */
-        .stMarkdown, .stAlert, .stFileUploader > div {
-            background: rgba(15, 23, 42, 0.6) !important;
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.08) !important;
+        /* Glassmorphism SOLO para contenedores de archivos y alertas (NO para texto general) */
+        .stFileUploader > div, .stAlert {
+            background: rgba(15, 23, 42, 0.5) !important;
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.1) !important;
             border-radius: 12px !important;
         }
 
-        /* Botón principal con degradado corporativo */
+        /* Botón principal */
         .stButton>button {
             background: linear-gradient(90deg, #1e40af 0%, #2563eb 100%) !important;
             color: white !important;
@@ -286,14 +290,14 @@ def main():
             transform: translateY(-1px);
         }
 
-        /* Inputs y Text Areas */
+        /* Inputs y Text Areas con buen contraste */
         .stTextInput>div>div>input, .stTextArea>div>div>textarea {
             background-color: rgba(15, 23, 42, 0.8) !important;
-            color: #e2e8f0 !important;
+            color: #f8fafc !important;
             border: 1px solid #334155 !important;
         }
         
-        /* Ocultar elementos por defecto de Streamlit */
+        /* Ocultar elementos por defecto */
         #MainMenu {visibility: hidden;}
         footer {visibility: hidden;}
         .viewerBadge_container__1QSob {display: none;}
@@ -303,7 +307,7 @@ def main():
     <div class="aceternity-bg"></div>
     """, unsafe_allow_html=True)
 
-    # 🌟 HERO SECTION (Imitando tu código React)
+    # 🌟 HERO SECTION
     st.markdown("""
     <div style="text-align: center; padding: 2rem 1rem 3rem 1rem; position: relative; z-index: 2;">
         <h1 class="gradient-text" style="font-size: 2.5rem; margin-bottom: 1rem;">
@@ -322,7 +326,6 @@ def main():
         st.markdown("---")
         st.info("Arquitectura Activa:\n1. Refinador de Consultas\n2. 11 Agentes de Dominio\n3. Auditor Crítico\n4. Motor de Consenso", icon="ℹ️")
 
-    # Contenedor principal con fondo transparente para dejar ver las líneas
     st.markdown('<div style="position: relative; z-index: 2;">', unsafe_allow_html=True)
     
     tema = st.text_area("🎯 Describe el proyecto, empresa o desafío a analizar:", 
